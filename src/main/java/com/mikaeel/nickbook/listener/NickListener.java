@@ -1,0 +1,39 @@
+package com.mikaeel.nickbook.listener;
+
+import com.mikaeel.nickbook.NickBookPlugin;
+import com.mikaeel.nickbook.service.NickService;
+import org.bukkit.Bukkit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+
+public final class NickListener implements Listener {
+    private final NickBookPlugin plugin;
+    private final NickService service;
+
+    public NickListener(NickBookPlugin plugin, NickService service) {
+        this.plugin = plugin;
+        this.service = service;
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        if (service.isNicked(e.getPlayer())) service.applySilently(e.getPlayer());
+    }
+
+    /**
+     * Only used when LPC is NOT installed. With LPC installed we never touch the
+     * format, so LuckPerms ranks stay intact; LPC uses %nickbook_...% instead.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onChat(AsyncPlayerChatEvent e) {
+        if (Bukkit.getPluginManager().isPluginEnabled("LPC")) return;
+        if (!plugin.getConfig().getBoolean("fallback-chat-format", true)) return;
+        String prefix = service.shownPrefix(e.getPlayer()).replace("%", "%%");
+        String name = service.shownName(e.getPlayer()).replace("%", "%%");
+        String suffix = service.shownSuffix(e.getPlayer()).replace("%", "%%");
+        e.setFormat(prefix + name + suffix + "\u00a7f: %2$s");
+    }
+}
